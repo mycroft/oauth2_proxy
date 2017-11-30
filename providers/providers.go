@@ -25,6 +25,8 @@ func New(provider string, p *ProviderData) Provider {
 		return NewFacebookProvider(p)
 	case "github":
 		return NewGitHubProvider(p)
+	case "criteo":
+		return NewCriteoProvider(p)
 	case "azure":
 		return NewAzureProvider(p)
 	case "gitlab":
