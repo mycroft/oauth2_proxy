@@ -32,6 +32,9 @@ type Options struct {
 	AuthenticatedEmailsFile  string   `flag:"authenticated-emails-file" cfg:"authenticated_emails_file"`
 	AzureTenant              string   `flag:"azure-tenant" cfg:"azure_tenant"`
 	EmailDomains             []string `flag:"email-domain" cfg:"email_domains"`
+	CriteoSsoHost            string   `flag:"criteo-sso-host" cfg:"criteo_sso_host"`
+	CriteoIdentityHost       string   `flag:"criteo-identity-host" cfg:"criteo_identity_host"`
+	CriteoGroups             []string `flag:"criteo-group" cfg:"criteo_group"`
 	GitHubOrg                string   `flag:"github-org" cfg:"github_org"`
 	GitHubTeam               string   `flag:"github-team" cfg:"github_team"`
 	GoogleGroups             []string `flag:"google-group" cfg:"google_group"`
@@ -263,6 +266,12 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 		p.Configure(o.AzureTenant)
 	case *providers.GitHubProvider:
 		p.SetOrgTeam(o.GitHubOrg, o.GitHubTeam)
+	case *providers.CriteoProvider:
+		if o.CriteoSsoHost == "" || o.CriteoIdentityHost == "" {
+			msgs = append(msgs, "missing setting: criteo-sso-host or criteo-identity-host")
+		} else {
+			p.Configure(o.CriteoSsoHost, o.CriteoIdentityHost, o.CriteoGroups)
+		}
 	case *providers.GoogleProvider:
 		if o.GoogleServiceAccountJSON != "" {
 			file, err := os.Open(o.GoogleServiceAccountJSON)
