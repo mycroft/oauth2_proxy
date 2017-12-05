@@ -1,12 +1,41 @@
-language: go
-go:
-  - 1.8.x
-  - 1.9.x
-script:
-  - wget -O dep https://github.com/golang/dep/releases/download/v0.3.2/dep-linux-amd64
-  - chmod +x dep
-  - ./dep ensure
-  - ./test.sh
 sudo: false
+
+language: go
+
+go:
+#- 1.8.x
+- 1.9.x
+
+before_install:
+# Make sure it works for forks.
+- ln -s $HOME/gopath/src/github.com/${TRAVIS_REPO_SLUG///oauth2_proxy/} $HOME/gopath/src/github.com/bitly
+
+script:
+#- wget -O dep https://github.com/golang/dep/releases/download/v0.3.2/dep-linux-amd64
+#- chmod +x dep
+#- "./dep ensure"
+- "./test.sh"
+- go build
+
+before_deploy:
+  - DIR=oauth2_proxy-$(echo $TRAVIS_TAG | sed s/v//).0.linux-amd64.go${TRAVIS_GO_VERSION}
+  - mkdir ${DIR}
+  - cp oauth2_proxy ${DIR}
+  - tar -czf ${DIR}.tar.gz ${DIR}
+
+go_import_path: github.com/criteo-forks/oauth2_proxy
+
 notifications:
-  email: false
+  email: true
+
+deploy:
+  provider: releases
+  api_key:
+    secure: Q22NzH1c95vAZs2+y/vOxHfZtFuOLl0IpYYkWvtRDLSGjL6bDPhaF4nZQmhZlGTOf/HNDvlYCSFMPwsbAvuf+0kpjDuva/V+MqLUaio1MQVwait9ofZd2NFSqjp7gIA0a2l1LjV4q1E1sQaP/yB3OVJOrkM55xVJmCwIX+xszxvw070xxy1dWZbQ802ma7QvgvsECCUUYsPmIPPPhDzU2S0DMnMzFDGAVFclyXhuXNPE9FzdzVwgs/yCP/gMA6FXb/A+aXMm+tII4fZ0eZsVehNVbgNkW6+J6IieI2bWs9awARgUFSS3C0LmkU10VZa6PEWX3s8J0P1D0apH3+LPVInYorkwdmnqlMr8DQecQOIJDS9DY0cuz8n5UXvwwl9X9guB4/pYE3u+bEd1ngLu4jvKOvofxN1B3rDabaYLYMQGJq6kF5bvq+XsrEfaFcZk0JWcw0sq5WsPLsIQ+H12usyc27nDnFh9F7WyFBfTWu5MriIm00F6pJOeYy92WOcrlswGOEWLE3aB0jUjhI02C0dbVcddI1Yq2qLfD++7aD+l7RR6oKai09za9IdsvyOmYepeKplqtRnYrr14aFief0eNHu02uBkvB8IV6x1NpCgV2dN5tGRVe4G/Ymakgqeb/ga6it/SeyqzrBoNZYhVaFnGLYCHyx4T9MfnVfKSKsw=
+  file_glob: true
+  file: oauth2_proxy-*.tar.gz
+  skip_cleanup: true
+  on:
+    repo: criteo-forks/oauth2_proxy
+    tags: true
+    condition: $TRAVIS_GO_VERSION =~ ^1\.9\.[0-9]+$
