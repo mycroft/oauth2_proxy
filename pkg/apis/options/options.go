@@ -40,6 +40,9 @@ type Options struct {
 	AzureTenant              string   `flag:"azure-tenant" cfg:"azure_tenant"`
 	BitbucketTeam            string   `flag:"bitbucket-team" cfg:"bitbucket_team"`
 	BitbucketRepository      string   `flag:"bitbucket-repository" cfg:"bitbucket_repository"`
+	CriteoSsoHost            string   `flag:"criteo-sso-host" cfg:"criteo_sso_host"`
+	CriteoIdentityHost       string   `flag:"criteo-identity-host" cfg:"criteo_identity_host"`
+	CriteoGroups             []string `flag:"criteo-group" cfg:"criteo_group"`
 	EmailDomains             []string `flag:"email-domain" cfg:"email_domains"`
 	WhitelistDomains         []string `flag:"whitelist-domain" cfg:"whitelist_domains"`
 	GitHubOrg                string   `flag:"github-org" cfg:"github_org"`
@@ -185,6 +188,9 @@ func NewFlagSet() *pflag.FlagSet {
 	flagSet.String("azure-tenant", "common", "go to a tenant-specific or common (tenant-independent) endpoint.")
 	flagSet.String("bitbucket-team", "", "restrict logins to members of this team")
 	flagSet.String("bitbucket-repository", "", "restrict logins to user with access to this repository")
+	flagSet.String("criteo-sso-host", "", "Criteo SSO hostname.")
+	flagSet.String("criteo-identity-host", "", "Criteo Identity hostname.")
+	flagSet.StringSlice("criteo-group", []string{}, "restrict logins to members of this criteo group (may be given multiple times).")
 	flagSet.String("github-org", "", "restrict logins to members of this organisation")
 	flagSet.String("github-team", "", "restrict logins to members of this team")
 	flagSet.String("github-repo", "", "restrict logins to collaborators of this repository")

@@ -267,6 +267,8 @@ func parseProviderInfo(o *options.Options, msgs []string) []string {
 		if len(o.KeycloakGroups) > 0 {
 			p.SetAllowedGroups(o.KeycloakGroups)
 		}
+	case *providers.CriteoProvider:
+		p.Configure(o.CriteoSsoHost, o.CriteoIdentityHost, o.CriteoGroups)
 	case *providers.GoogleProvider:
 		if o.GoogleServiceAccountJSON != "" {
 			file, err := os.Open(o.GoogleServiceAccountJSON)
