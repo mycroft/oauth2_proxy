@@ -125,9 +125,9 @@ func (p *ProviderData) GetPreferredUsername(ctx context.Context, s *sessions.Ses
 	return "", errors.New("not implemented")
 }
 
-// ValidateGroup validates that the provided email exists in the configured provider
+// ValidateGroup validates that the provided session is in the configured provider
 // email group(s).
-func (p *ProviderData) ValidateGroup(email string) bool {
+func (p *ProviderData) ValidateGroup(s *sessions.SessionState) bool {
 	return true
 }
 
