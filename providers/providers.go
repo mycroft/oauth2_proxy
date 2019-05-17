@@ -14,7 +14,7 @@ type Provider interface {
 	GetUserName(ctx context.Context, s *sessions.SessionState) (string, error)
 	GetPreferredUsername(ctx context.Context, s *sessions.SessionState) (string, error)
 	Redeem(ctx context.Context, redirectURI, code string) (*sessions.SessionState, error)
-	ValidateGroup(string) bool
+	ValidateGroup(*sessions.SessionState) bool
 	ValidateSessionState(ctx context.Context, s *sessions.SessionState) bool
 	GetLoginURL(redirectURI, finalRedirect string) string
 	RefreshSessionIfNeeded(ctx context.Context, s *sessions.SessionState) (bool, error)

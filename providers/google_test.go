@@ -14,6 +14,8 @@ import (
 
 	admin "google.golang.org/api/admin/directory/v1"
 	option "google.golang.org/api/option"
+
+	"github.com/oauth2-proxy/oauth2-proxy/pkg/apis/sessions"
 )
 
 func newRedeemServer(body []byte) (*url.URL, *httptest.Server) {
@@ -112,19 +114,25 @@ func TestGoogleProviderGetEmailAddress(t *testing.T) {
 
 func TestGoogleProviderValidateGroup(t *testing.T) {
 	p := newGoogleProvider()
+	s := &sessions.SessionState{
+		Email: "michael.bland@gsa.gov",
+	}
 	p.GroupValidator = func(email string) bool {
 		return email == "michael.bland@gsa.gov"
 	}
-	assert.Equal(t, true, p.ValidateGroup("michael.bland@gsa.gov"))
+	assert.Equal(t, true, p.ValidateGroup(s))
 	p.GroupValidator = func(email string) bool {
 		return email != "michael.bland@gsa.gov"
 	}
-	assert.Equal(t, false, p.ValidateGroup("michael.bland@gsa.gov"))
+	assert.Equal(t, false, p.ValidateGroup(s))
 }
 
 func TestGoogleProviderWithoutValidateGroup(t *testing.T) {
 	p := newGoogleProvider()
-	assert.Equal(t, true, p.ValidateGroup("michael.bland@gsa.gov"))
+	s := &sessions.SessionState{
+		Email: "michael.bland@gsa.gov",
+	}
+	assert.Equal(t, true, p.ValidateGroup(s))
 }
 
 //
