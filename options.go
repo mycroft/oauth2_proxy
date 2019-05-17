@@ -35,6 +35,9 @@ type Options struct {
 	AuthenticatedEmailsFile  string   `flag:"authenticated-emails-file" cfg:"authenticated_emails_file" env:"OAUTH2_PROXY_AUTHENTICATED_EMAILS_FILE"`
 	AzureTenant              string   `flag:"azure-tenant" cfg:"azure_tenant" env:"OAUTH2_PROXY_AZURE_TENANT"`
 	EmailDomains             []string `flag:"email-domain" cfg:"email_domains" env:"OAUTH2_PROXY_EMAIL_DOMAINS"`
+	CriteoSsoHost            string   `flag:"criteo-sso-host" cfg:"criteo_sso_host"`
+	CriteoIdentityHost       string   `flag:"criteo-identity-host" cfg:"criteo_identity_host"`
+	CriteoGroups             []string `flag:"criteo-group" cfg:"criteo_group"`
 	WhitelistDomains         []string `flag:"whitelist-domain" cfg:"whitelist_domains" env:"OAUTH2_PROXY_WHITELIST_DOMAINS"`
 	GitHubOrg                string   `flag:"github-org" cfg:"github_org" env:"OAUTH2_PROXY_GITHUB_ORG"`
 	GitHubTeam               string   `flag:"github-team" cfg:"github_team" env:"OAUTH2_PROXY_GITHUB_TEAM"`
@@ -310,6 +313,12 @@ func parseProviderInfo(o *Options, msgs []string) []string {
 		p.Configure(o.AzureTenant)
 	case *providers.GitHubProvider:
 		p.SetOrgTeam(o.GitHubOrg, o.GitHubTeam)
+	case *providers.CriteoProvider:
+		if o.CriteoSsoHost == "" || o.CriteoIdentityHost == "" {
+			msgs = append(msgs, "missing setting: criteo-sso-host or criteo-identity-host")
+		} else {
+			p.Configure(o.CriteoSsoHost, o.CriteoIdentityHost, o.CriteoGroups)
+		}
 	case *providers.GoogleProvider:
 		if o.GoogleServiceAccountJSON != "" {
 			file, err := os.Open(o.GoogleServiceAccountJSON)

@@ -23,6 +23,7 @@ func main() {
 	whitelistDomains := StringArray{}
 	upstreams := StringArray{}
 	skipAuthRegex := StringArray{}
+	criteoGroups := StringArray{}
 	googleGroups := StringArray{}
 
 	config := flagSet.String("config", "", "path to config file")
@@ -51,6 +52,9 @@ func main() {
 	flagSet.Var(&emailDomains, "email-domain", "authenticate emails with the specified domain (may be given multiple times). Use * to authenticate any email")
 	flagSet.Var(&whitelistDomains, "whitelist-domain", "allowed domains for redirection after authentication. Prefix domain with a . to allow subdomains (eg .example.com)")
 	flagSet.String("azure-tenant", "common", "go to a tenant-specific or common (tenant-independent) endpoint.")
+	flagSet.String("criteo-sso-host", "", "Criteo SSO hostname.")
+	flagSet.String("criteo-identity-host", "", "Criteo Identity hostname.")
+	flagSet.Var(&criteoGroups, "criteo-group", "restrict logins to members of this criteo group (may be given multiple times).")
 	flagSet.String("github-org", "", "restrict logins to members of this organisation")
 	flagSet.String("github-team", "", "restrict logins to members of this team")
 	flagSet.Var(&googleGroups, "google-group", "restrict logins to members of this google group (may be given multiple times).")
