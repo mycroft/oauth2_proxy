@@ -64,6 +64,7 @@ func main() {
 	flagSet.String("client-secret", "", "the OAuth Client Secret")
 	flagSet.String("authenticated-emails-file", "", "authenticate against emails via file (one per line)")
 	flagSet.String("htpasswd-file", "", "additionally authenticate against a htpasswd file. Entries must be created with \"htpasswd -s\" for SHA encryption or \"htpasswd -B\" for bcrypt encryption")
+	flagSet.String("ldap-conf-file", "", "additionally authenticate against a LDAP server configured by a TOML file.")
 	flagSet.Bool("display-htpasswd-form", true, "display username / password login form if an htpasswd file is provided")
 	flagSet.String("custom-templates-dir", "", "path to custom html templates")
 	flagSet.String("footer", "", "custom footer string. Use \"-\" to disable default footer.")
@@ -141,6 +142,14 @@ func main() {
 		oauthproxy.DisplayHtpasswdForm = opts.DisplayHtpasswdForm
 		if err != nil {
 			log.Fatalf("FATAL: unable to open %s %s", opts.HtpasswdFile, err)
+		}
+	}
+
+	if opts.LdapConfFile != "" {
+		log.Printf("using ldap server config file %s", opts.LdapConfFile)
+		oauthproxy.LdapAuthenticator, err = NewLdapAuthenticatorFromFile(opts.LdapConfFile)
+		if err != nil {
+			log.Fatalf("FATAL: unable to open %s %s", opts.LdapConfFile, err)
 		}
 	}
 
