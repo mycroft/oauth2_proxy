@@ -65,7 +65,7 @@ func main() {
 	flagSet.String("authenticated-emails-file", "", "authenticate against emails via file (one per line)")
 	flagSet.String("htpasswd-file", "", "additionally authenticate against a htpasswd file. Entries must be created with \"htpasswd -s\" for SHA encryption or \"htpasswd -B\" for bcrypt encryption")
 	flagSet.String("ldap-conf-file", "", "additionally authenticate against a LDAP server configured by a TOML file.")
-	flagSet.Bool("display-htpasswd-form", true, "display username / password login form if an htpasswd file is provided")
+	flagSet.Bool("display-custom-login-form", true, "display username / password login form if an htpasswd file or a ldap config file is provided")
 	flagSet.String("custom-templates-dir", "", "path to custom html templates")
 	flagSet.String("footer", "", "custom footer string. Use \"-\" to disable default footer.")
 	flagSet.String("proxy-prefix", "/oauth2", "the url root path that this proxy should be nested under (e.g. /<oauth2>/sign_in)")
@@ -139,7 +139,7 @@ func main() {
 	if opts.HtpasswdFile != "" {
 		log.Printf("using htpasswd file %s", opts.HtpasswdFile)
 		oauthproxy.HtpasswdFile, err = NewHtpasswdFromFile(opts.HtpasswdFile)
-		oauthproxy.DisplayHtpasswdForm = opts.DisplayHtpasswdForm
+		oauthproxy.DisplayCustomLoginForm = opts.DisplayCustomLoginForm
 		if err != nil {
 			log.Fatalf("FATAL: unable to open %s %s", opts.HtpasswdFile, err)
 		}
@@ -148,6 +148,7 @@ func main() {
 	if opts.LdapConfFile != "" {
 		log.Printf("using ldap server config file %s", opts.LdapConfFile)
 		oauthproxy.LdapAuthenticator, err = NewLdapAuthenticatorFromFile(opts.LdapConfFile)
+		oauthproxy.DisplayCustomLoginForm = opts.DisplayCustomLoginForm
 		if err != nil {
 			log.Fatalf("FATAL: unable to open %s %s", opts.LdapConfFile, err)
 		}

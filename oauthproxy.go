@@ -71,29 +71,29 @@ type OAuthProxy struct {
 	OAuthCallbackPath string
 	AuthOnlyPath      string
 
-	redirectURL         *url.URL // the url to receive requests at
-	whitelistDomains    []string
-	provider            providers.Provider
-	ProxyPrefix         string
-	SignInMessage       string
-	HtpasswdFile        *HtpasswdFile
-	LdapAuthenticator   *LdapAuthenticator
-	DisplayHtpasswdForm bool
-	serveMux            http.Handler
-	SetXAuthRequest     bool
-	PassBasicAuth       bool
-	SkipProviderButton  bool
-	PassUserHeaders     bool
-	BasicAuthPassword   string
-	PassAccessToken     bool
-	SetAuthorization    bool
-	PassAuthorization   bool
-	CookieCipher        *cookie.Cipher
-	skipAuthRegex       []string
-	skipAuthPreflight   bool
-	compiledRegex       []*regexp.Regexp
-	templates           *template.Template
-	Footer              string
+	redirectURL            *url.URL // the url to receive requests at
+	whitelistDomains       []string
+	provider               providers.Provider
+	ProxyPrefix            string
+	SignInMessage          string
+	HtpasswdFile           *HtpasswdFile
+	LdapAuthenticator      *LdapAuthenticator
+	DisplayCustomLoginForm bool
+	serveMux               http.Handler
+	SetXAuthRequest        bool
+	PassBasicAuth          bool
+	SkipProviderButton     bool
+	PassUserHeaders        bool
+	BasicAuthPassword      string
+	PassAccessToken        bool
+	SetAuthorization       bool
+	PassAuthorization      bool
+	CookieCipher           *cookie.Cipher
+	skipAuthRegex          []string
+	skipAuthPreflight      bool
+	compiledRegex          []*regexp.Regexp
+	templates              *template.Template
+	Footer                 string
 }
 
 // UpstreamProxy represents an upstream server to proxy to
@@ -290,7 +290,7 @@ func (p *OAuthProxy) GetRedirectURI(host string) string {
 }
 
 func (p *OAuthProxy) displayCustomLoginForm() bool {
-	return (p.HtpasswdFile != nil || p.LdapAuthenticator != nil) && p.DisplayHtpasswdForm
+	return (p.HtpasswdFile != nil || p.LdapAuthenticator != nil) && p.DisplayCustomLoginForm
 }
 
 func (p *OAuthProxy) redeemCode(host, code string) (s *providers.SessionState, err error) {
