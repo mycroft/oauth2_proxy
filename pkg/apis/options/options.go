@@ -58,6 +58,7 @@ type Options struct {
 	GoogleAdminEmail         string   `flag:"google-admin-email" cfg:"google_admin_email"`
 	GoogleServiceAccountJSON string   `flag:"google-service-account-json" cfg:"google_service_account_json"`
 	HtpasswdFile             string   `flag:"htpasswd-file" cfg:"htpasswd_file"`
+	LdapConfFile             string   `flag:"ldap-conf-file" cfg:"ldap_conf_file" env:"OAUTH2_PROXY_LDAP_CONF_FILE"`
 	DisplayHtpasswdForm      bool     `flag:"display-htpasswd-form" cfg:"display_htpasswd_form"`
 	CustomTemplatesDir       string   `flag:"custom-templates-dir" cfg:"custom_templates_dir"`
 	Banner                   string   `flag:"banner" cfg:"banner"`
@@ -246,6 +247,7 @@ func NewFlagSet() *pflag.FlagSet {
 	flagSet.String("client-secret-file", "", "the file with OAuth Client Secret")
 	flagSet.String("authenticated-emails-file", "", "authenticate against emails via file (one per line)")
 	flagSet.String("htpasswd-file", "", "additionally authenticate against a htpasswd file. Entries must be created with \"htpasswd -s\" for SHA encryption or \"htpasswd -B\" for bcrypt encryption")
+	flagSet.String("ldap-conf-file", "", "additionally authenticate against a LDAP server configured by a TOML file.")
 	flagSet.Bool("display-htpasswd-form", true, "display username / password login form if an htpasswd file is provided")
 	flagSet.String("custom-templates-dir", "", "path to custom html templates")
 	flagSet.String("banner", "", "custom banner string. Use \"-\" to disable default banner.")

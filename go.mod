@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/Bose/minisentinel v0.0.0-20200130220412-917c5a9223bb
+	github.com/BurntSushi/toml v0.3.1
 	github.com/alicebob/miniredis v2.5.0+incompatible // indirect
 	github.com/alicebob/miniredis/v2 v2.11.2
 	github.com/bitly/go-simplejson v0.5.0
@@ -28,6 +29,7 @@ require (
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	google.golang.org/api v0.20.0
+	gopkg.in/ldap.v3 v3.1.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/square/go-jose.v2 v2.4.1
 	mvdan.cc/unparam v0.0.0-20200501210554-b37ab49443f7 // indirect

@@ -70,6 +70,14 @@ func main() {
 		}
 	}
 
+	if opts.LdapConfFile != "" {
+		logger.Printf("using ldap server config file %s", opts.LdapConfFile)
+		oauthproxy.LdapAuthenticator, err = NewLdapAuthenticatorFromFile(opts.LdapConfFile)
+		if err != nil {
+			logger.Fatalf("FATAL: unable to open %s %s", opts.LdapConfFile, err)
+		}
+	}
+
 	rand.Seed(time.Now().UnixNano())
 
 	chain := alice.New()
