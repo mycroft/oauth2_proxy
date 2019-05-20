@@ -97,6 +97,7 @@ type OAuthProxy struct {
 	ProxyPrefix          string
 	SignInMessage        string
 	HtpasswdFile         *HtpasswdFile
+	LdapAuthenticator    *LdapAuthenticator
 	DisplayHtpasswdForm  bool
 	serveMux             http.Handler
 	SetXAuthRequest      bool
@@ -368,7 +369,7 @@ func (p *OAuthProxy) GetRedirectURI(host string) string {
 }
 
 func (p *OAuthProxy) displayCustomLoginForm() bool {
-	return p.HtpasswdFile != nil && p.DisplayHtpasswdForm
+	return (p.HtpasswdFile != nil || p.LdapAuthenticator != nil) && p.DisplayHtpasswdForm
 }
 
 func (p *OAuthProxy) redeemCode(ctx context.Context, host, code string) (s *sessionsapi.SessionState, err error) {
@@ -527,7 +528,7 @@ func (p *OAuthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 
 // ManualSignIn handles basic auth logins to the proxy
 func (p *OAuthProxy) ManualSignIn(rw http.ResponseWriter, req *http.Request) (string, bool) {
-	if req.Method != "POST" || p.HtpasswdFile == nil {
+	if req.Method != "POST" {
 		return "", false
 	}
 	user := req.FormValue("username")
@@ -536,11 +537,15 @@ func (p *OAuthProxy) ManualSignIn(rw http.ResponseWriter, req *http.Request) (st
 		return "", false
 	}
 	// check auth
-	if p.HtpasswdFile.Validate(user, passwd) {
+	if p.HtpasswdFile != nil && p.HtpasswdFile.Validate(user, passwd) {
 		logger.PrintAuthf(user, req, logger.AuthSuccess, "Authenticated via HtpasswdFile")
 		return user, true
 	}
-	logger.PrintAuthf(user, req, logger.AuthFailure, "Invalid authentication via HtpasswdFile")
+	if p.LdapAuthenticator != nil && p.LdapAuthenticator.Validate(user, passwd) {
+		logger.PrintAuthf(user, req, logger.AuthSuccess, "Authenticated via LdapAuthenticator")
+		return user, true
+	}
+	logger.PrintAuthf(user, req, logger.AuthFailure, "Invalid authentication via HtpasswdFile nor LdapAuthenticator")
 	return "", false
 }
 
@@ -1091,9 +1096,9 @@ func (p *OAuthProxy) addHeadersForProxying(rw http.ResponseWriter, req *http.Req
 }
 
 // CheckBasicAuth checks the requests Authorization header for basic auth
-// credentials and authenticates these against the proxies HtpasswdFile
+// credentials and authenticates these against the proxies HtpasswdFile and/or LdapAuthenticator
 func (p *OAuthProxy) CheckBasicAuth(req *http.Request) (*sessionsapi.SessionState, error) {
-	if p.HtpasswdFile == nil {
+	if p.HtpasswdFile == nil && p.LdapAuthenticator == nil {
 		return nil, nil
 	}
 	auth := req.Header.Get("Authorization")
@@ -1112,11 +1117,15 @@ func (p *OAuthProxy) CheckBasicAuth(req *http.Request) (*sessionsapi.SessionStat
 	if len(pair) != 2 {
 		return nil, fmt.Errorf("invalid format %s", b)
 	}
-	if p.HtpasswdFile.Validate(pair[0], pair[1]) {
+	if p.HtpasswdFile != nil && p.HtpasswdFile.Validate(pair[0], pair[1]) {
 		logger.PrintAuthf(pair[0], req, logger.AuthSuccess, "Authenticated via basic auth and HTpasswd File")
 		return &sessionsapi.SessionState{User: pair[0]}, nil
 	}
-	logger.PrintAuthf(pair[0], req, logger.AuthFailure, "Invalid authentication via basic auth: not in Htpasswd File")
+	if p.LdapAuthenticator != nil && p.LdapAuthenticator.Validate(pair[0], pair[1]) {
+		logger.PrintAuthf(pair[0], req, logger.AuthSuccess, "Authenticated via basic auth and Ldap Authenticator")
+		return &sessionsapi.SessionState{User: pair[0]}, nil
+	}
+	logger.PrintAuthf(pair[0], req, logger.AuthFailure, "Invalid authentication via basic auth: not in Htpasswd File nor in Ldap Authenticator")
 	return nil, nil
 }
 
