@@ -89,36 +89,36 @@ type OAuthProxy struct {
 	AuthOnlyPath      string
 	UserInfoPath      string
 
-	redirectURL          *url.URL // the url to receive requests at
-	whitelistDomains     []string
-	provider             providers.Provider
-	providerNameOverride string
-	sessionStore         sessionsapi.SessionStore
-	ProxyPrefix          string
-	SignInMessage        string
-	HtpasswdFile         *HtpasswdFile
-	LdapAuthenticator    *LdapAuthenticator
-	DisplayHtpasswdForm  bool
-	serveMux             http.Handler
-	SetXAuthRequest      bool
-	PassBasicAuth        bool
-	SetBasicAuth         bool
-	SkipProviderButton   bool
-	PassUserHeaders      bool
-	BasicAuthPassword    string
-	PassAccessToken      bool
-	SetAuthorization     bool
-	PassAuthorization    bool
-	PreferEmailToUser    bool
-	skipAuthRegex        []string
-	skipAuthPreflight    bool
-	skipJwtBearerTokens  bool
-	jwtBearerVerifiers   []*oidc.IDTokenVerifier
-	compiledRegex        []*regexp.Regexp
-	templates            *template.Template
-	realClientIPParser   ipapi.RealClientIPParser
-	Banner               string
-	Footer               string
+	redirectURL            *url.URL // the url to receive requests at
+	whitelistDomains       []string
+	provider               providers.Provider
+	providerNameOverride   string
+	sessionStore           sessionsapi.SessionStore
+	ProxyPrefix            string
+	SignInMessage          string
+	HtpasswdFile           *HtpasswdFile
+	LdapAuthenticator      *LdapAuthenticator
+	DisplayCustomLoginForm bool
+	serveMux               http.Handler
+	SetXAuthRequest        bool
+	PassBasicAuth          bool
+	SetBasicAuth           bool
+	SkipProviderButton     bool
+	PassUserHeaders        bool
+	BasicAuthPassword      string
+	PassAccessToken        bool
+	SetAuthorization       bool
+	PassAuthorization      bool
+	PreferEmailToUser      bool
+	skipAuthRegex          []string
+	skipAuthPreflight      bool
+	skipJwtBearerTokens    bool
+	jwtBearerVerifiers     []*oidc.IDTokenVerifier
+	compiledRegex          []*regexp.Regexp
+	templates              *template.Template
+	realClientIPParser     ipapi.RealClientIPParser
+	Banner                 string
+	Footer                 string
 }
 
 // UpstreamProxy represents an upstream server to proxy to
@@ -369,7 +369,7 @@ func (p *OAuthProxy) GetRedirectURI(host string) string {
 }
 
 func (p *OAuthProxy) displayCustomLoginForm() bool {
-	return (p.HtpasswdFile != nil || p.LdapAuthenticator != nil) && p.DisplayHtpasswdForm
+	return (p.HtpasswdFile != nil || p.LdapAuthenticator != nil) && p.DisplayCustomLoginForm
 }
 
 func (p *OAuthProxy) redeemCode(ctx context.Context, host, code string) (s *sessionsapi.SessionState, err error) {

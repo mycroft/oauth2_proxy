@@ -63,7 +63,7 @@ func main() {
 	if opts.HtpasswdFile != "" {
 		logger.Printf("using htpasswd file %s", opts.HtpasswdFile)
 		oauthproxy.HtpasswdFile, err = NewHtpasswdFromFile(opts.HtpasswdFile)
-		oauthproxy.DisplayHtpasswdForm = opts.DisplayHtpasswdForm
+		oauthproxy.DisplayCustomLoginForm = opts.DisplayCustomLoginForm
 		if err != nil {
 			logger.Fatalf("FATAL: unable to open %s %s", opts.HtpasswdFile, err)
 		}
@@ -72,6 +72,7 @@ func main() {
 	if opts.LdapConfFile != "" {
 		logger.Printf("using ldap server config file %s", opts.LdapConfFile)
 		oauthproxy.LdapAuthenticator, err = NewLdapAuthenticatorFromFile(opts.LdapConfFile)
+		oauthproxy.DisplayCustomLoginForm = opts.DisplayCustomLoginForm
 		if err != nil {
 			logger.Fatalf("FATAL: unable to open %s %s", opts.LdapConfFile, err)
 		}
