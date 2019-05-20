@@ -97,7 +97,7 @@ type OAuthProxy struct {
 	SignInMessage           string
 	HtpasswdFile            *HtpasswdFile
 	LdapAuthenticator       *LdapAuthenticator
-	DisplayHtpasswdForm     bool
+	DisplayCustomLoginForm  bool
 	serveMux                http.Handler
 	SetXAuthRequest         bool
 	PassBasicAuth           bool
@@ -369,7 +369,7 @@ func (p *OAuthProxy) GetRedirectURI(host string) string {
 }
 
 func (p *OAuthProxy) displayCustomLoginForm() bool {
-	return (p.HtpasswdFile != nil || p.LdapAuthenticator != nil) && p.DisplayHtpasswdForm
+	return (p.HtpasswdFile != nil || p.LdapAuthenticator != nil) && p.DisplayCustomLoginForm
 }
 
 func (p *OAuthProxy) redeemCode(ctx context.Context, host, code string) (s *sessionsapi.SessionState, err error) {

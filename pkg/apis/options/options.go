@@ -59,7 +59,7 @@ type Options struct {
 	GoogleServiceAccountJSON string   `flag:"google-service-account-json" cfg:"google_service_account_json"`
 	HtpasswdFile             string   `flag:"htpasswd-file" cfg:"htpasswd_file"`
 	LdapConfFile             string   `flag:"ldap-conf-file" cfg:"ldap_conf_file" env:"OAUTH2_PROXY_LDAP_CONF_FILE"`
-	DisplayHtpasswdForm      bool     `flag:"display-htpasswd-form" cfg:"display_htpasswd_form"`
+	DisplayCustomLoginForm   bool     `flag:"display-custom-login-form" cfg:"display_custom_login_form" env:"OAUTH2_PROXY_DISPLAY_CUSTOM_LOGIN_FORM"`
 	CustomTemplatesDir       string   `flag:"custom-templates-dir" cfg:"custom_templates_dir"`
 	Banner                   string   `flag:"banner" cfg:"banner"`
 	Footer                   string   `flag:"footer" cfg:"footer"`
@@ -151,15 +151,15 @@ func (o *Options) SetRealClientIPParser(s ipapi.RealClientIPParser) { o.realClie
 // NewOptions constructs a new Options with defaulted values
 func NewOptions() *Options {
 	return &Options{
-		ProxyPrefix:         "/oauth2",
-		ProviderType:        "google",
-		PingPath:            "/ping",
-		ProxyWebSockets:     true,
-		HTTPAddress:         "127.0.0.1:4180",
-		HTTPSAddress:        ":443",
-		RealClientIPHeader:  "X-Real-IP",
-		ForceHTTPS:          false,
-		DisplayHtpasswdForm: true,
+		ProxyPrefix:            "/oauth2",
+		ProviderType:           "google",
+		PingPath:               "/ping",
+		ProxyWebSockets:        true,
+		HTTPAddress:            "127.0.0.1:4180",
+		HTTPSAddress:           ":443",
+		RealClientIPHeader:     "X-Real-IP",
+		ForceHTTPS:             false,
+		DisplayCustomLoginForm: true,
 		Cookie: CookieOptions{
 			Name:     "_oauth2_proxy",
 			Secure:   true,
@@ -248,7 +248,7 @@ func NewFlagSet() *pflag.FlagSet {
 	flagSet.String("authenticated-emails-file", "", "authenticate against emails via file (one per line)")
 	flagSet.String("htpasswd-file", "", "additionally authenticate against a htpasswd file. Entries must be created with \"htpasswd -s\" for SHA encryption or \"htpasswd -B\" for bcrypt encryption")
 	flagSet.String("ldap-conf-file", "", "additionally authenticate against a LDAP server configured by a TOML file.")
-	flagSet.Bool("display-htpasswd-form", true, "display username / password login form if an htpasswd file is provided")
+	flagSet.Bool("display-custom-login-form", true, "display username / password login form if an htpasswd file or a ldap config file is provided")
 	flagSet.String("custom-templates-dir", "", "path to custom html templates")
 	flagSet.String("banner", "", "custom banner string. Use \"-\" to disable default banner.")
 	flagSet.String("footer", "", "custom footer string. Use \"-\" to disable default footer.")
