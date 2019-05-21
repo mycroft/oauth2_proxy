@@ -10,41 +10,44 @@ import (
 	"gopkg.in/ldap.v3"
 )
 
-type LdapServerConf struct {
+type ldapServerConf struct {
 	Host         string           `toml:"host"`
 	Port         int              `toml:"port"`
 	BindDN       string           `toml:"bind_dn"`
 	BindPassword string           `toml:"bind_password"`
-	Attr         LdapAttributeMap `toml:"attributes"`
+	Attr         ldapAttributeMap `toml:"attributes"`
 
-	SearchFilter  string   `toml:"search_filter"`
-	SearchBaseDNs []string `toml:"search_base_dns"`
+	SearchFilter     string   `toml:"search_filter"`
+	SearchBaseDNList []string `toml:"search_base_dns"`
 
-	GroupDNs []string `toml:"group_dns"`
+	GroupDNList []string `toml:"group_dns"`
 }
 
-type LdapAttributeMap struct {
+type ldapAttributeMap struct {
 	MemberOf string `toml:"member_of"`
 }
 
+// LdapAuthenticator represents the structure of an ldap authenticator
 type LdapAuthenticator struct {
-	Conf              *LdapServerConf
+	Conf              *ldapServerConf
 	requireSecondBind bool
 }
 
+// NewLdapAuthenticatorFromFile consctructs an LdapAuthenticator from the file at the path given
 func NewLdapAuthenticatorFromFile(path string) (*LdapAuthenticator, error) {
-	var conf LdapServerConf
+	var conf ldapServerConf
 	if _, err := toml.DecodeFile(path, &conf); err != nil {
 		return nil, err
 	}
 
-	return NewLdapAuthenticator(&conf)
+	return newLdapAuthenticator(&conf)
 }
 
-func NewLdapAuthenticator(conf *LdapServerConf) (*LdapAuthenticator, error) {
+func newLdapAuthenticator(conf *ldapServerConf) (*LdapAuthenticator, error) {
 	return &LdapAuthenticator{Conf: conf}, nil
 }
 
+// Validate checks a users password against the LdapAuthenticator
 func (a *LdapAuthenticator) Validate(user string, password string) bool {
 	ldapHost := fmt.Sprintf("%s:%d", a.Conf.Host, a.Conf.Port)
 	l, err := ldap.Dial("tcp", ldapHost)
@@ -63,7 +66,7 @@ func (a *LdapAuthenticator) Validate(user string, password string) bool {
 
 	// Search for the given username
 	var searchResult *ldap.SearchResult
-	for _, searchBase := range a.Conf.SearchBaseDNs {
+	for _, searchBase := range a.Conf.SearchBaseDNList {
 		searchReq := ldap.SearchRequest{
 			BaseDN:       searchBase,
 			Scope:        ldap.ScopeWholeSubtree,
@@ -99,11 +102,11 @@ func (a *LdapAuthenticator) Validate(user string, password string) bool {
 	}
 
 	// Validate groups
-	if a.Conf.GroupDNs == nil {
+	if a.Conf.GroupDNList == nil {
 		return true
 	}
 
-	for _, allowedGroupDN := range a.Conf.GroupDNs {
+	for _, allowedGroupDN := range a.Conf.GroupDNList {
 		for _, groupDN := range searchResult.Entries[0].GetAttributeValues("memberOf") {
 			if groupDN == allowedGroupDN {
 				return true

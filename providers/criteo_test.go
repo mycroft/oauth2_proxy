@@ -96,8 +96,8 @@ func TestCriteoProviderGetEmailAddress(t *testing.T) {
 	b := testCriteoBackend(`{"mail": "user@criteo.com"}`)
 	defer b.Close()
 
-	b_url, _ := url.Parse(b.URL)
-	p := testCriteoProvider(b_url.Host)
+	bURL, _ := url.Parse(b.URL)
+	p := testCriteoProvider(bURL.Host)
 
 	session := &SessionState{AccessToken: "imaginary_access_token"}
 	email, err := p.GetEmailAddress(session)
@@ -109,8 +109,8 @@ func TestCriteoProviderGetEmailAddressFailedRequest(t *testing.T) {
 	b := testCriteoBackend("unused payload")
 	defer b.Close()
 
-	b_url, _ := url.Parse(b.URL)
-	p := testCriteoProvider(b_url.Host)
+	bURL, _ := url.Parse(b.URL)
+	p := testCriteoProvider(bURL.Host)
 
 	// We'll trigger a request failure by using an unexpected access
 	// token. Alternatively, we could allow the parsing of the payload as
@@ -125,8 +125,8 @@ func TestCriteoProviderGetEmailAddressEmailNotPresentInPayload(t *testing.T) {
 	b := testCriteoBackend("{\"foo\": \"bar\"}")
 	defer b.Close()
 
-	b_url, _ := url.Parse(b.URL)
-	p := testCriteoProvider(b_url.Host)
+	bURL, _ := url.Parse(b.URL)
+	p := testCriteoProvider(bURL.Host)
 
 	session := &SessionState{AccessToken: "imaginary_access_token"}
 	email, err := p.GetEmailAddress(session)

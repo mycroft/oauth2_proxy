@@ -11,6 +11,7 @@ import (
 	"github.com/pusher/oauth2_proxy/api"
 )
 
+// CriteoProvider represents a Criteo based Identity Provider
 type CriteoProvider struct {
 	*ProviderData
 	// GroupValidator is a function that determines if the passed email is in
@@ -37,11 +38,12 @@ type groupsResponse struct {
 	Groups []groupInfo
 }
 
-type CriteoProfile struct {
+type criteoProfile struct {
 	profile profileResponse
 	groups  groupsResponse
 }
 
+// NewCriteoProvider initiates a new CriteoProvider
 func NewCriteoProvider(p *ProviderData) *CriteoProvider {
 	p.ProviderName = "Criteo"
 	if p.Scope == "" {
@@ -50,6 +52,7 @@ func NewCriteoProvider(p *ProviderData) *CriteoProvider {
 	return &CriteoProvider{ProviderData: p}
 }
 
+// Configure defaults the CriteoProvider configuration options
 func (p *CriteoProvider) Configure(ssoHost string, identityHost string, groups []string) {
 	p.IdentityURL = &url.URL{Scheme: "http",
 		Host: identityHost,
@@ -85,14 +88,14 @@ func (p *CriteoProvider) Configure(ssoHost string, identityHost string, groups [
 	}
 }
 
-func getCriteoHeader(access_token string) http.Header {
+func getCriteoHeader(accessToken string) http.Header {
 	header := make(http.Header)
 	header.Set("Accept", "application/json")
-	header.Set("Authorization", fmt.Sprintf("Bearer %s", access_token))
+	header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
 	return header
 }
 
-func requestJson(s *SessionState, url *url.URL, v interface{}) error {
+func requestJSON(s *SessionState, url *url.URL, v interface{}) error {
 	if s != nil && s.AccessToken == "" {
 		return errors.New("missing access token")
 	}
@@ -109,13 +112,13 @@ func requestJson(s *SessionState, url *url.URL, v interface{}) error {
 	return err
 }
 
-func (p *CriteoProvider) GetProfile(s *SessionState) error {
+func (p *CriteoProvider) getProfile(s *SessionState) error {
 	if s.User != "" && s.Email != "" {
 		return nil
 	}
 
 	var info tokenInfo
-	err := requestJson(s, p.ProfileURL, &info)
+	err := requestJSON(s, p.ProfileURL, &info)
 	if err != nil {
 		return err
 	}
@@ -123,23 +126,23 @@ func (p *CriteoProvider) GetProfile(s *SessionState) error {
 	s.Email = info.Email
 	s.User = info.User
 	if s.Email == "" {
-		return fmt.Errorf("Can't find email.")
+		return fmt.Errorf("can't find email")
 	}
 	return nil
 }
 
-func (p *CriteoProvider) GetExtendedProfile(dn string) (*CriteoProfile, error) {
-	profile := CriteoProfile{}
+func (p *CriteoProvider) getExtendedProfile(dn string) (*criteoProfile, error) {
+	profile := criteoProfile{}
 
 	url := *p.IdentityURL
 	url.Path = url.Path + dn
-	err := requestJson(nil, &url, &profile.profile)
+	err := requestJSON(nil, &url, &profile.profile)
 	if err != nil {
 		return nil, err
 	}
 
 	url.Path += "/groups"
-	err = requestJson(nil, &url, &profile.groups.Groups)
+	err = requestJSON(nil, &url, &profile.groups.Groups)
 	if err != nil {
 		return nil, err
 	}
@@ -147,24 +150,31 @@ func (p *CriteoProvider) GetExtendedProfile(dn string) (*CriteoProfile, error) {
 	return &profile, nil
 }
 
+// GetEmailAddress returns the Account email address
 func (p *CriteoProvider) GetEmailAddress(s *SessionState) (string, error) {
-	err := p.GetProfile(s)
+	err := p.getProfile(s)
 	return s.Email, err
 }
 
+// GetUserName returns the Account username
 func (p *CriteoProvider) GetUserName(s *SessionState) (string, error) {
-	err := p.GetProfile(s)
+	err := p.getProfile(s)
 	return s.User, err
 }
 
+// ValidateSessionState validates the AccessToken
 func (p *CriteoProvider) ValidateSessionState(s *SessionState) bool {
 	return validateToken(p, s.AccessToken, getCriteoHeader(s.AccessToken))
 }
 
+// ValidateGroup validates that the provided email exists in the configured Criteo
+// group(s).
 func (p *CriteoProvider) ValidateGroup(s *SessionState) bool {
 	return p.GroupValidator(s)
 }
 
+// RefreshSessionIfNeeded checks if the session has expired and uses the
+// RefreshToken to fetch a new ID token if required
 func (p *CriteoProvider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
 	if s == nil || s.ExpiresOn.After(time.Now()) || s.RefreshToken == "" {
 		return false, nil
@@ -181,7 +191,7 @@ func (p *CriteoProvider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
 }
 
 func (p *CriteoProvider) userInGroup(groups []string, s *SessionState) bool {
-	profile, err := p.GetExtendedProfile(s.User)
+	profile, err := p.getExtendedProfile(s.User)
 	if err != nil {
 		log.Print(err)
 		return false
