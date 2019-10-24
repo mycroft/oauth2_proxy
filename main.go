@@ -13,6 +13,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	options "github.com/mreiferson/go-options"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -101,6 +102,8 @@ func main() {
 	flagSet.String("pubjwk-url", "", "JWK pubkey access endpoint: required by login.gov")
 	flagSet.Bool("gcp-healthchecks", false, "Enable GCP/GKE healthcheck endpoints")
 
+	flagSet.Bool("cors-allow-all", false, "Enable CORS as AllowAll")
+
 	flagSet.Parse(os.Args[1:])
 
 	if *showVersion {
@@ -161,6 +164,10 @@ func main() {
 		handler = gcpHealthcheck(LoggingHandler(os.Stdout, oauthproxy, opts.RequestLogging, opts.RequestLoggingFormat))
 	} else {
 		handler = LoggingHandler(os.Stdout, oauthproxy, opts.RequestLogging, opts.RequestLoggingFormat)
+	}
+
+	if opts.CorsAllowAll {
+		handler = cors.AllowAll().Handler(handler)
 	}
 	s := &Server{
 		Handler: handler,
