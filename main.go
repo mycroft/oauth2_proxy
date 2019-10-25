@@ -167,7 +167,19 @@ func main() {
 	}
 
 	if opts.CorsAllowAll {
-		handler = cors.AllowAll().Handler(handler)
+		handler = cors.New(cors.Options{
+			AllowedOrigins: []string{"*"},
+			AllowedMethods: []string{
+				http.MethodHead,
+				http.MethodGet,
+				http.MethodPost,
+				http.MethodPut,
+				http.MethodPatch,
+				http.MethodDelete,
+			},
+			AllowedHeaders:   []string{"*"},
+			AllowCredentials: true,
+		}).Handler(handler)
 	}
 	s := &Server{
 		Handler: handler,
