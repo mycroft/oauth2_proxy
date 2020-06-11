@@ -24,25 +24,13 @@ type CriteoProvider struct {
 
 type tokenInfo struct {
 	Email string `json:"mail"`
-	User  string `json:"dn"`
+	User  string `json:"uid"`
 }
 
 type profileResponse struct {
-	Cn string `json:"cn"`
-	Dn string `json:"dn"`
-}
-
-type groupInfo struct {
-	Name string `json:"name"`
-}
-
-type groupsResponse struct {
-	Groups []groupInfo
-}
-
-type criteoProfile struct {
-	profile profileResponse
-	groups  groupsResponse
+	Cn     string   `json:"cn"`
+	UID    string   `json:"uid"`
+	Groups []string `json:"member_of"`
 }
 
 // NewCriteoProvider initiates a new CriteoProvider
@@ -58,7 +46,7 @@ func NewCriteoProvider(p *ProviderData) *CriteoProvider {
 func (p *CriteoProvider) Configure(ssoHost string, identityHost string, groups []string) {
 	p.IdentityURL = &url.URL{Scheme: "http",
 		Host: identityHost,
-		Path: "/user/",
+		Path: "/tool/ldapUserInfo/",
 	}
 
 	if p.LoginURL.String() == "" {
@@ -150,18 +138,12 @@ func (p *CriteoProvider) GetProfile(ctx context.Context, s *sessions.SessionStat
 	return nil
 }
 
-func (p *CriteoProvider) getExtendedProfile(dn string) (*criteoProfile, error) {
-	profile := criteoProfile{}
+func (p *CriteoProvider) getExtendedProfile(dn string) (*profileResponse, error) {
+	profile := profileResponse{}
 
 	url := *p.IdentityURL
 	url.Path += dn
-	err := requestJSON(nil, &url, &profile.profile)
-	if err != nil {
-		return nil, err
-	}
-
-	url.Path += "/groups"
-	err = requestJSON(nil, &url, &profile.groups.Groups)
+	err := requestJSON(nil, &url, &profile)
 	if err != nil {
 		return nil, err
 	}
@@ -217,9 +199,9 @@ func (p *CriteoProvider) userInGroup(groups []string, s *sessions.SessionState) 
 		return false
 	}
 
-	for _, ug := range profile.groups.Groups {
+	for _, ug := range profile.Groups {
 		for _, g := range groups {
-			if ug.Name == g {
+			if ug == g {
 				return true
 			}
 		}
