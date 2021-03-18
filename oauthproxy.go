@@ -160,6 +160,13 @@ func NewOAuthProxy(opts *options.Options, validator func(string) bool) (*OAuthPr
 			return nil, fmt.Errorf("could not load htpasswdfile: %v", err)
 		}
 	}
+	if opts.LdapConfFile != "" {
+		logger.Printf("using ldap server config file %s", opts.LdapConfFile)
+		basicAuthValidator, err = basic.NewLdapAuthenticatorFromFile(opts.LdapConfFile)
+		if err != nil {
+			logger.Fatalf("FATAL: unable to open %s %s", opts.LdapConfFile, err)
+		}
+	}
 
 	allowedRoutes, err := buildRoutesAllowlist(opts)
 	if err != nil {
@@ -627,10 +634,10 @@ func (p *OAuthProxy) ManualSignIn(req *http.Request) (string, bool) {
 	}
 	// check auth
 	if p.basicAuthValidator.Validate(user, passwd) {
-		logger.PrintAuthf(user, req, logger.AuthSuccess, "Authenticated via HtpasswdFile")
+		logger.PrintAuthf(user, req, logger.AuthSuccess, "Authenticated via basic auth")
 		return user, true
 	}
-	logger.PrintAuthf(user, req, logger.AuthFailure, "Invalid authentication via HtpasswdFile")
+	logger.PrintAuthf(user, req, logger.AuthFailure, "Invalid authentication via basic auth")
 	return "", false
 }
 

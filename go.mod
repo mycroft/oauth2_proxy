@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/Bose/minisentinel v0.0.0-20200130220412-917c5a9223bb
+	github.com/BurntSushi/toml v0.3.1
 	github.com/alicebob/miniredis/v2 v2.13.0
 	github.com/bitly/go-simplejson v0.5.0
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
@@ -12,6 +13,7 @@ require (
 	github.com/frankban/quicktest v1.10.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
+	github.com/go-ldap/ldap/v3 v3.2.4
 	github.com/go-redis/redis/v8 v8.2.3
 	github.com/justinas/alice v1.2.0
 	github.com/mbland/hmacauth v0.0.0-20170912233209-44256dfd4bfa
