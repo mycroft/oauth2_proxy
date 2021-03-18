@@ -75,34 +75,34 @@ type OAuthProxy struct {
 	AuthOnlyPath      string
 	UserInfoPath      string
 
-	allowedRoutes        []allowedRoute
-	redirectURL          *url.URL // the url to receive requests at
-	whitelistDomains     []string
-	provider             providers.Provider
-	providerNameOverride string
-	sessionStore         sessionsapi.SessionStore
-	ProxyPrefix          string
-	SignInMessage        string
-	basicAuthValidator   basic.Validator
-	displayHtpasswdForm  bool
-	serveMux             http.Handler
-	SetXAuthRequest      bool
-	PassBasicAuth        bool
-	SetBasicAuth         bool
-	SkipProviderButton   bool
-	PassUserHeaders      bool
-	BasicAuthPassword    string
-	PassAccessToken      bool
-	SetAuthorization     bool
-	PassAuthorization    bool
-	PreferEmailToUser    bool
-	skipAuthPreflight    bool
-	skipJwtBearerTokens  bool
-	templates            *template.Template
-	realClientIPParser   ipapi.RealClientIPParser
-	trustedIPs           *ip.NetSet
-	Banner               string
-	Footer               string
+	allowedRoutes          []allowedRoute
+	redirectURL            *url.URL // the url to receive requests at
+	whitelistDomains       []string
+	provider               providers.Provider
+	providerNameOverride   string
+	sessionStore           sessionsapi.SessionStore
+	ProxyPrefix            string
+	SignInMessage          string
+	basicAuthValidator     basic.Validator
+	displayCustomLoginForm bool
+	serveMux               http.Handler
+	SetXAuthRequest        bool
+	PassBasicAuth          bool
+	SetBasicAuth           bool
+	SkipProviderButton     bool
+	PassUserHeaders        bool
+	BasicAuthPassword      string
+	PassAccessToken        bool
+	SetAuthorization       bool
+	PassAuthorization      bool
+	PreferEmailToUser      bool
+	skipAuthPreflight      bool
+	skipJwtBearerTokens    bool
+	templates              *template.Template
+	realClientIPParser     ipapi.RealClientIPParser
+	trustedIPs             *ip.NetSet
+	Banner                 string
+	Footer                 string
 
 	sessionChain alice.Chain
 	headersChain alice.Chain
@@ -222,11 +222,11 @@ func NewOAuthProxy(opts *options.Options, validator func(string) bool) (*OAuthPr
 		Footer:               opts.Footer,
 		SignInMessage:        buildSignInMessage(opts),
 
-		basicAuthValidator:  basicAuthValidator,
-		displayHtpasswdForm: basicAuthValidator != nil && opts.DisplayHtpasswdForm,
-		sessionChain:        sessionChain,
-		headersChain:        headersChain,
-		preAuthChain:        preAuthChain,
+		basicAuthValidator:     basicAuthValidator,
+		displayCustomLoginForm: basicAuthValidator != nil && opts.DisplayCustomLoginForm,
+		sessionChain:           sessionChain,
+		headersChain:           headersChain,
+		preAuthChain:           preAuthChain,
 	}, nil
 }
 
@@ -606,7 +606,7 @@ func (p *OAuthProxy) SignInPage(rw http.ResponseWriter, req *http.Request, code 
 	}{
 		ProviderName:  p.provider.Data().ProviderName,
 		SignInMessage: template.HTML(p.SignInMessage),
-		CustomLogin:   p.displayHtpasswdForm,
+		CustomLogin:   p.displayCustomLoginForm,
 		Redirect:      redirectURL,
 		Version:       VERSION,
 		ProxyPrefix:   p.ProxyPrefix,
