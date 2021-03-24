@@ -32,6 +32,7 @@ func NewLegacyOptions() *LegacyOptions {
 		LegacyHeaders: LegacyHeaders{
 			PassBasicAuth:        true,
 			PassUserHeaders:      true,
+			PassProxyHeaders:     true,
 			SkipAuthStripHeaders: true,
 		},
 
@@ -144,6 +145,7 @@ type LegacyHeaders struct {
 	PassBasicAuth     bool `flag:"pass-basic-auth" cfg:"pass_basic_auth"`
 	PassAccessToken   bool `flag:"pass-access-token" cfg:"pass_access_token"`
 	PassUserHeaders   bool `flag:"pass-user-headers" cfg:"pass_user_headers"`
+	PassProxyHeaders  bool `flag:"pass-proxy-headers" cfg:"pass_proxy_headers"`
 	PassAuthorization bool `flag:"pass-authorization-header" cfg:"pass_authorization_header"`
 
 	SetBasicAuth     bool `flag:"set-basic-auth" cfg:"set_basic_auth"`
@@ -161,6 +163,7 @@ func legacyHeadersFlagSet() *pflag.FlagSet {
 	flagSet.Bool("pass-basic-auth", true, "pass HTTP Basic Auth, X-Forwarded-User and X-Forwarded-Email information to upstream")
 	flagSet.Bool("pass-access-token", false, "pass OAuth access_token to upstream via X-Forwarded-Access-Token header")
 	flagSet.Bool("pass-user-headers", true, "pass X-Forwarded-User and X-Forwarded-Email information to upstream")
+	flagSet.Bool("pass-proxy-headers", true, "pass X-Forwarded-Proto, X-Forwarded-Host and X-Forwarded-URI information to upstream")
 	flagSet.Bool("pass-authorization-header", false, "pass the Authorization Header to upstream")
 
 	flagSet.Bool("set-basic-auth", false, "set HTTP Basic Auth information in response (useful in Nginx auth_request mode)")
@@ -191,6 +194,10 @@ func (l *LegacyHeaders) getRequestHeaders() []Header {
 	if l.PassBasicAuth || l.PassUserHeaders {
 		requestHeaders = append(requestHeaders, getPassUserHeaders(l.PreferEmailToUser)...)
 		requestHeaders = append(requestHeaders, getPreferredUsernameHeader())
+	}
+
+	if l.PassProxyHeaders {
+		requestHeaders = append(requestHeaders, getPassProxyHeaders()...)
 	}
 
 	if l.PassAccessToken {
@@ -302,6 +309,44 @@ func getPassUserHeaders(preferEmailToUser bool) []Header {
 			},
 		},
 	)
+}
+
+func getPassProxyHeaders() []Header {
+	return []Header{
+		{
+			Name:                 "X-Forwarded-Proto",
+			PreserveRequestValue: true,
+			Values: []HeaderValue{
+				{
+					RequestSource: &RequestSource{
+						RequestSourceAttr: RequestSourceAttrProto,
+					},
+				},
+			},
+		},
+		{
+			Name:                 "X-Forwarded-Host",
+			PreserveRequestValue: true,
+			Values: []HeaderValue{
+				{
+					RequestSource: &RequestSource{
+						RequestSourceAttr: RequestSourceAttrHost,
+					},
+				},
+			},
+		},
+		{
+			Name:                 "X-Forwarded-URI",
+			PreserveRequestValue: true,
+			Values: []HeaderValue{
+				{
+					RequestSource: &RequestSource{
+						RequestSourceAttr: RequestSourceAttrURI,
+					},
+				},
+			},
+		},
+	}
 }
 
 func getPassAccessTokenHeader() Header {

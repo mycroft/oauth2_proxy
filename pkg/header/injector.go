@@ -11,16 +11,16 @@ import (
 )
 
 type Injector interface {
-	Inject(http.Header, *sessionsapi.SessionState)
+	Inject(http.Header, *http.Request, *sessionsapi.SessionState)
 }
 
 type injector struct {
 	valueInjectors []valueInjector
 }
 
-func (i injector) Inject(header http.Header, session *sessionsapi.SessionState) {
+func (i injector) Inject(header http.Header, req *http.Request, session *sessionsapi.SessionState) {
 	for _, injector := range i.valueInjectors {
-		injector.inject(header, session)
+		injector.inject(header, req, session)
 	}
 }
 
@@ -40,29 +40,31 @@ func NewInjector(headers []options.Header) (Injector, error) {
 }
 
 type valueInjector interface {
-	inject(http.Header, *sessionsapi.SessionState)
+	inject(http.Header, *http.Request, *sessionsapi.SessionState)
 }
 
 func newValueinjector(name string, value options.HeaderValue) (valueInjector, error) {
 	switch {
-	case value.SecretSource != nil && value.ClaimSource == nil:
+	case value.SecretSource != nil && value.ClaimSource == nil && value.RequestSource == nil:
 		return newSecretInjector(name, value.SecretSource)
-	case value.SecretSource == nil && value.ClaimSource != nil:
+	case value.SecretSource == nil && value.ClaimSource != nil && value.RequestSource == nil:
 		return newClaimInjector(name, value.ClaimSource)
+	case value.SecretSource == nil && value.ClaimSource == nil && value.RequestSource != nil:
+		return newRequestInjector(name, value.RequestSource)
 	default:
 		return nil, fmt.Errorf("header %q value has multiple entries: only one entry per value is allowed", name)
 	}
 }
 
 type injectorFunc struct {
-	injectFunc func(http.Header, *sessionsapi.SessionState)
+	injectFunc func(http.Header, *http.Request, *sessionsapi.SessionState)
 }
 
-func (i *injectorFunc) inject(header http.Header, session *sessionsapi.SessionState) {
-	i.injectFunc(header, session)
+func (i *injectorFunc) inject(header http.Header, req *http.Request, session *sessionsapi.SessionState) {
+	i.injectFunc(header, req, session)
 }
 
-func newInjectorFunc(injectFunc func(header http.Header, session *sessionsapi.SessionState)) valueInjector {
+func newInjectorFunc(injectFunc func(header http.Header, req *http.Request, session *sessionsapi.SessionState)) valueInjector {
 	return &injectorFunc{injectFunc: injectFunc}
 }
 
@@ -72,7 +74,7 @@ func newSecretInjector(name string, source *options.SecretSource) (valueInjector
 		return nil, fmt.Errorf("error getting secret value: %v", err)
 	}
 
-	return newInjectorFunc(func(header http.Header, session *sessionsapi.SessionState) {
+	return newInjectorFunc(func(header http.Header, req *http.Request, session *sessionsapi.SessionState) {
 		header.Add(name, string(value))
 	}), nil
 }
@@ -84,7 +86,7 @@ func newClaimInjector(name string, source *options.ClaimSource) (valueInjector, 
 		if err != nil {
 			return nil, fmt.Errorf("error loading basicAuthPassword: %v", err)
 		}
-		return newInjectorFunc(func(header http.Header, session *sessionsapi.SessionState) {
+		return newInjectorFunc(func(header http.Header, req *http.Request, session *sessionsapi.SessionState) {
 			claimValues := session.GetClaim(source.Claim)
 			for _, claim := range claimValues {
 				if claim == "" {
@@ -95,7 +97,7 @@ func newClaimInjector(name string, source *options.ClaimSource) (valueInjector, 
 			}
 		}), nil
 	case source.Prefix != "":
-		return newInjectorFunc(func(header http.Header, session *sessionsapi.SessionState) {
+		return newInjectorFunc(func(header http.Header, req *http.Request, session *sessionsapi.SessionState) {
 			claimValues := session.GetClaim(source.Claim)
 			for _, claim := range claimValues {
 				if claim == "" {
@@ -105,7 +107,7 @@ func newClaimInjector(name string, source *options.ClaimSource) (valueInjector, 
 			}
 		}), nil
 	default:
-		return newInjectorFunc(func(header http.Header, session *sessionsapi.SessionState) {
+		return newInjectorFunc(func(header http.Header, req *http.Request, session *sessionsapi.SessionState) {
 			claimValues := session.GetClaim(source.Claim)
 			for _, claim := range claimValues {
 				if claim == "" {
@@ -114,5 +116,28 @@ func newClaimInjector(name string, source *options.ClaimSource) (valueInjector, 
 				header.Add(name, claim)
 			}
 		}), nil
+	}
+}
+
+func newRequestInjector(name string, source *options.RequestSource) (valueInjector, error) {
+	switch source.RequestSourceAttr {
+	case options.RequestSourceAttrProto:
+		return newInjectorFunc(func(header http.Header, req *http.Request, session *sessionsapi.SessionState) {
+			if req.TLS != nil {
+				header.Add(name, "https")
+			} else {
+				header.Add(name, "http")
+			}
+		}), nil
+	case options.RequestSourceAttrHost:
+		return newInjectorFunc(func(header http.Header, req *http.Request, session *sessionsapi.SessionState) {
+			header.Add(name, req.Host)
+		}), nil
+	case options.RequestSourceAttrURI:
+		return newInjectorFunc(func(header http.Header, req *http.Request, session *sessionsapi.SessionState) {
+			header.Add(name, req.RequestURI)
+		}), nil
+	default:
+		return nil, nil
 	}
 }

@@ -91,6 +91,7 @@ type OAuthProxy struct {
 	SetBasicAuth           bool
 	SkipProviderButton     bool
 	PassUserHeaders        bool
+	PassProxyHeaders       bool
 	BasicAuthPassword      string
 	PassAccessToken        bool
 	SetAuthorization       bool

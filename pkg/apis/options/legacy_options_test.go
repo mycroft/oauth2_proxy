@@ -102,6 +102,39 @@ var _ = Describe("Legacy Options", func() {
 						},
 					},
 				},
+				{
+					Name:                 "X-Forwarded-Proto",
+					PreserveRequestValue: false,
+					Values: []HeaderValue{
+						{
+							RequestSource: &RequestSource{
+								RequestSourceAttr: RequestSourceAttrProto,
+							},
+						},
+					},
+				},
+				{
+					Name:                 "X-Forwarded-Host",
+					PreserveRequestValue: false,
+					Values: []HeaderValue{
+						{
+							RequestSource: &RequestSource{
+								RequestSourceAttr: RequestSourceAttrHost,
+							},
+						},
+					},
+				},
+				{
+					Name:                 "X-Forwarded-URI",
+					PreserveRequestValue: false,
+					Values: []HeaderValue{
+						{
+							RequestSource: &RequestSource{
+								RequestSourceAttr: RequestSourceAttrURI,
+							},
+						},
+					},
+				},
 			}
 
 			opts.InjectResponseHeaders = []Header{}

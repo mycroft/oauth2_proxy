@@ -47,6 +47,15 @@ injectRequestHeaders:
 - name: X-Forwarded-Preferred-Username
   values:
   - claim: preferred_username
+- name: X-Forwarded-Proto
+  values:
+  - requestSourceAttr: PROTO
+- name: X-Forwarded-Host
+  values:
+  - requestSourceAttr: HOST
+- name: X-Forwarded-URI
+  values:
+  - requestSourceAttr: URI
 injectResponseHeaders:
 - name: Authorization
   values:
@@ -203,7 +212,7 @@ redirect_url="http://localhost:4180/oauth2/callback"
 			configContent:      testCoreConfig,
 			alphaConfigContent: testAlphaConfig + ":",
 			expectedOptions:    func() *options.Options { return nil },
-			expectedErr:        errors.New("failed to load alpha options: error unmarshalling config: error converting YAML to JSON: yaml: line 34: did not find expected key"),
+			expectedErr:        errors.New("failed to load alpha options: error unmarshalling config: error converting YAML to JSON: yaml: line 43: did not find expected key"),
 		}),
 		Entry("with alpha configuration and bad core configuration", loadConfigurationTableInput{
 			configContent:      testCoreConfig + "unknown_field=\"something\"",

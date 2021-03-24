@@ -40,10 +40,12 @@ func validateHeader(header options.Header, names map[string]struct{}) []string {
 
 func validateHeaderValue(name string, value options.HeaderValue) []string {
 	switch {
-	case value.SecretSource != nil && value.ClaimSource == nil:
+	case value.SecretSource != nil && value.ClaimSource == nil && value.RequestSource == nil:
 		return []string{validateSecretSource(*value.SecretSource)}
-	case value.SecretSource == nil && value.ClaimSource != nil:
+	case value.SecretSource == nil && value.ClaimSource != nil && value.RequestSource == nil:
 		return validateHeaderValueClaimSource(*value.ClaimSource)
+	case value.SecretSource == nil && value.ClaimSource == nil && value.RequestSource != nil:
+		return validateHeaderValueRequestSource(*value.RequestSource)
 	default:
 		return []string{"header value has multiple entries: only one entry per value is allowed"}
 	}
@@ -60,4 +62,18 @@ func validateHeaderValueClaimSource(claim options.ClaimSource) []string {
 		msgs = append(msgs, prefixValues("invalid basicAuthPassword: ", validateSecretSource(*claim.BasicAuthPassword))...)
 	}
 	return msgs
+}
+
+func validateHeaderValueRequestSource(reqSource options.RequestSource) []string {
+	if reqSource.RequestSourceAttr == "" {
+		return []string{"requestSourceAttr should not be empty"}
+	}
+
+	expectedValues := []string{options.RequestSourceAttrProto, options.RequestSourceAttrHost, options.RequestSourceAttrURI}
+	for _, v := range expectedValues {
+		if reqSource.RequestSourceAttr == v {
+			return []string{}
+		}
+	}
+	return []string{fmt.Sprintf("requestSourceAttr should be one of %q", expectedValues)}
 }

@@ -35,7 +35,7 @@ var _ = Describe("Injector Suite", func() {
 				Expect(injector).ToNot(BeNil())
 
 				headers := in.initialHeaders.Clone()
-				injector.Inject(headers, in.session)
+				injector.Inject(headers, nil, in.session)
 				Expect(headers).To(Equal(in.expectedHeaders))
 			},
 			Entry("with no configured headers", newInjectorTableInput{

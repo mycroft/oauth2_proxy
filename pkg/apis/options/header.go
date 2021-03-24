@@ -25,6 +25,9 @@ type HeaderValue struct {
 
 	// Allow users to load the value from a session claim
 	*ClaimSource `json:",omitempty"`
+
+	// Allow users to load the value from a http request
+	*RequestSource `json:",omitempty"`
 }
 
 // ClaimSource allows loading a header value from a claim within the session
@@ -41,4 +44,15 @@ type ClaimSource struct {
 	// Note the value of claim will become the basic auth username and the
 	// basicAuthPassword will be used as the password value.
 	BasicAuthPassword *SecretSource `json:"basicAuthPassword,omitempty"`
+}
+
+const (
+	RequestSourceAttrProto string = "PROTO"
+	RequestSourceAttrHost  string = "HOST"
+	RequestSourceAttrURI   string = "URI"
+)
+
+// RequestSource allows loading a header value from a http request
+type RequestSource struct {
+	RequestSourceAttr string `json:"requestSourceAttr,omitempty"`
 }
