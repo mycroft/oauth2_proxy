@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/sessions"
@@ -17,8 +18,9 @@ type CriteoProvider struct {
 	*ProviderData
 	// GroupValidator is a function that determines if the passed email is in
 	// the configured groups.
-	GroupValidator func(*sessions.SessionState) (bool, error)
-	IdentityURL    *url.URL
+	GroupValidator     func(*sessions.SessionState) (bool, error)
+	UserIdentityURL    *url.URL
+	ServiceIdentityURL *url.URL
 }
 
 type tokenInfo struct {
@@ -26,9 +28,14 @@ type tokenInfo struct {
 	User  string `json:"uid"`
 }
 
-type profileResponse struct {
+type userProfileResponse struct {
 	Cn     string   `json:"cn"`
 	UID    string   `json:"uid"`
+	Groups []string `json:"member_of"`
+}
+
+type serviceProfileResponse struct {
+	Name   string   `json:"name"`
 	Groups []string `json:"member_of"`
 }
 
@@ -43,9 +50,13 @@ func NewCriteoProvider(p *ProviderData) *CriteoProvider {
 
 // Configure defaults the CriteoProvider configuration options
 func (p *CriteoProvider) Configure(ssoHost string, identityHost string, groups []string) {
-	p.IdentityURL = &url.URL{Scheme: "http",
+	p.UserIdentityURL = &url.URL{Scheme: "http",
 		Host: identityHost,
-		Path: "/tool/ldapUserInfo/",
+		Path: "/api/non-auth/ldap/userInfo/",
+	}
+	p.ServiceIdentityURL = &url.URL{Scheme: "http",
+		Host: identityHost,
+		Path: "/api/non-auth/ldap/serviceAccountInfos",
 	}
 
 	if p.LoginURL.String() == "" {
@@ -107,10 +118,30 @@ func (p *CriteoProvider) GetProfile(ctx context.Context, s *sessions.SessionStat
 	return nil
 }
 
-func (p *CriteoProvider) getExtendedProfile(dn string) (*profileResponse, error) {
-	profile := profileResponse{}
+func (p *CriteoProvider) getProfileGroups(dn string) ([]string, error) {
+	if strings.HasPrefix(dn, "svc-") {
+		profiles := []serviceProfileResponse{}
 
-	url := *p.IdentityURL
+		url := *p.ServiceIdentityURL
+		url.RawQuery = "regex=" + dn
+		err := requests.New(url.String()).
+			Do().
+			UnmarshalInto(&profiles)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, profile := range profiles {
+			if profile.Name == dn {
+				return profile.Groups, nil
+			}
+		}
+		return nil, fmt.Errorf("no profile found for for %s", dn)
+	}
+
+	profile := userProfileResponse{}
+
+	url := *p.UserIdentityURL
 	url.Path += dn
 	err := requests.New(url.String()).
 		Do().
@@ -118,8 +149,7 @@ func (p *CriteoProvider) getExtendedProfile(dn string) (*profileResponse, error)
 	if err != nil {
 		return nil, err
 	}
-
-	return &profile, nil
+	return profile.Groups, nil
 }
 
 // GetEmailAddress returns the Account email address
@@ -168,13 +198,13 @@ func (p *CriteoProvider) RefreshSessionIfNeeded(ctx context.Context, s *sessions
 }
 
 func (p *CriteoProvider) userInGroup(groups []string, s *sessions.SessionState) (bool, error) {
-	profile, err := p.getExtendedProfile(s.User)
+	profileGroups, err := p.getProfileGroups(s.User)
 	if err != nil {
 		log.Print(err)
 		return false, err
 	}
 
-	for _, ug := range profile.Groups {
+	for _, ug := range profileGroups {
 		for _, g := range groups {
 			if ug == g {
 				return true, nil
