@@ -17,8 +17,9 @@ type ldapServerConf struct {
 	BindPassword string           `toml:"bind_password"`
 	Attr         ldapAttributeMap `toml:"attributes"`
 
-	SearchFilter     string   `toml:"search_filter"`
-	SearchBaseDnList []string `toml:"search_base_dns"`
+	SearchFilter               string   `toml:"search_filter"`
+	ResolvedGroupsSearchFilter string   `toml:"resolved_groups_search_filter"`
+	SearchBaseDnList           []string `toml:"search_base_dns"`
 
 	GroupDnList []string `toml:"group_dns"`
 }
@@ -100,11 +101,12 @@ func (a *LdapAuthenticator) Validate(user string, password string) bool {
 		return false
 	}
 
-	// Validate groups
+	// Case no allowed group is configured
 	if a.Conf.GroupDnList == nil {
 		return true
 	}
 
+	// Case any allowed group is part of member_of attribute
 	for _, allowedGroupDN := range a.Conf.GroupDnList {
 		for _, groupDN := range searchResult.Entries[0].GetAttributeValues("memberOf") {
 			if groupDN == allowedGroupDN {
@@ -113,6 +115,36 @@ func (a *LdapAuthenticator) Validate(user string, password string) bool {
 		}
 	}
 
-	log.Printf("Invalid LDAP entry for %s.", user)
+	// Case any allowed group is not part of member_of attribute
+	// Search for the resolved groups.
+	var resolvedGroupsSearchResult *ldap.SearchResult
+	for _, searchBase := range a.Conf.SearchBaseDnList {
+		resolvedGroupSearchReq := ldap.SearchRequest{
+			BaseDN:       searchBase,
+			Scope:        ldap.ScopeWholeSubtree,
+			DerefAliases: ldap.NeverDerefAliases,
+			Filter:       strings.Replace(a.Conf.ResolvedGroupsSearchFilter, "%s", ldap.EscapeFilter(userdn), -1),
+		}
+
+		resolvedGroupsSearchResult, err = l.Search(&resolvedGroupSearchReq)
+		if err != nil {
+			log.Printf("LDAP: Unable to search for resolved groups for user '%s': %s", user, err)
+		}
+
+		if len(resolvedGroupsSearchResult.Entries) > 0 {
+			break
+		}
+	}
+
+	for _, allowedGroupDN := range a.Conf.GroupDnList {
+		for _, group := range resolvedGroupsSearchResult.Entries {
+			if group.DN == allowedGroupDN {
+				return true
+			}
+		}
+	}
+
+	// Case none of allowed group is part of resolved groups.
+	log.Printf("Invalid LDAP group membership for %s.", user)
 	return false
 }

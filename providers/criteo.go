@@ -28,15 +28,20 @@ type tokenInfo struct {
 	User  string `json:"uid"`
 }
 
+type userGroupsResponse struct {
+	Team    []string `json:"team_groups"`
+	Generic []string `json:"generic_groups"`
+}
+
 type userProfileResponse struct {
-	Cn     string   `json:"cn"`
-	UID    string   `json:"uid"`
-	Groups []string `json:"member_of"`
+	Cn     string             `json:"cn"`
+	UID    string             `json:"uid"`
+	Groups userGroupsResponse `json:"resolved_groups"`
 }
 
 type serviceProfileResponse struct {
 	Name   string   `json:"name"`
-	Groups []string `json:"member_of"`
+	Groups []string `json:"resolved_groups"`
 }
 
 // NewCriteoProvider initiates a new CriteoProvider
@@ -123,7 +128,7 @@ func (p *CriteoProvider) getProfileGroups(dn string) ([]string, error) {
 		profiles := []serviceProfileResponse{}
 
 		url := *p.ServiceIdentityURL
-		url.RawQuery = "regex=" + dn
+		url.RawQuery = "resolve_groups=true&regex=" + dn
 		err := requests.New(url.String()).
 			Do().
 			UnmarshalInto(&profiles)
@@ -142,6 +147,7 @@ func (p *CriteoProvider) getProfileGroups(dn string) ([]string, error) {
 	profile := userProfileResponse{}
 
 	url := *p.UserIdentityURL
+	url.RawQuery = "resolve_groups=true"
 	url.Path += dn
 	err := requests.New(url.String()).
 		Do().
@@ -149,7 +155,7 @@ func (p *CriteoProvider) getProfileGroups(dn string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return profile.Groups, nil
+	return append(profile.Groups.Team, profile.Groups.Generic...), nil
 }
 
 // GetEmailAddress returns the Account email address
