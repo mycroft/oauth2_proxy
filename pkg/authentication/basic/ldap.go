@@ -1,29 +1,25 @@
 package basic
 
 import (
+	"crypto/tls"
 	"fmt"
-	"strings"
-
 	"log"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/go-ldap/ldap/v3"
 )
 
 type ldapServerConf struct {
-	Host         string           `toml:"host"`
-	Port         int              `toml:"port"`
-	BindDN       string           `toml:"bind_dn"`
-	BindPassword string           `toml:"bind_password"`
-	Attr         ldapAttributeMap `toml:"attributes"`
-
-	SearchFilter               string   `toml:"search_filter"`
-	ResolvedGroupsSearchFilter string   `toml:"resolved_groups_search_filter"`
-	SearchBaseDnList           []string `toml:"search_base_dns"`
-
-	GroupDnList []string `toml:"group_dns"`
+	Host                       string           `toml:"host"`
+	Port                       int              `toml:"port"`
+	Realm                      string           `toml:"realm"`
+	Attr                       ldapAttributeMap `toml:"attributes"`
+	SearchFilter               string           `toml:"search_filter"`
+	ResolvedGroupsSearchFilter string           `toml:"resolved_groups_search_filter"`
+	SearchBaseDnList           []string         `toml:"search_base_dns"`
+	GroupDnList                []string         `toml:"group_dns"`
 }
-
 type ldapAttributeMap struct {
 	MemberOf string `toml:"member_of"`
 }
@@ -49,22 +45,27 @@ func newLdapAuthenticator(conf *ldapServerConf) (*LdapAuthenticator, error) {
 
 // Validate checks a users password against the LdapAuthenticator
 func (a *LdapAuthenticator) Validate(user string, password string) bool {
-	ldapHost := fmt.Sprintf("%s:%d", a.Conf.Host, a.Conf.Port)
-	l, err := ldap.Dial("tcp", ldapHost)
+	ldapURL := fmt.Sprintf("ldaps://%s:%d", a.Conf.Host, a.Conf.Port)
+	// To Remove when having a PKI(we allow self sign certificates)
+	/* #nosec */
+	l, err := ldap.DialURL(ldapURL, ldap.DialWithTLSConfig(&tls.Config{InsecureSkipVerify: true}))
+
 	if err != nil {
-		log.Printf("LDAP: Unable to dial %s: %s", ldapHost, err)
+		log.Printf("LDAP: Unable to dial %s: %s", ldapURL, err)
 		return false
 	}
 	defer l.Close()
+	fullUser := user + "@" + a.Conf.Realm
+	bindRequest := ldap.NewSimpleBindRequest(fullUser, password, nil)
+	// First validate user password
+	_, err = l.SimpleBind(bindRequest)
 
-	// First bind with a read only user
-	err = l.Bind(a.Conf.BindDN, a.Conf.BindPassword)
 	if err != nil {
-		log.Printf("LDAP: Unable to bind as read-only user '%s': %s", a.Conf.BindDN, err)
+		log.Printf("LDAP: Unable to bind as user '%s':'%s'", user, err)
 		return false
 	}
 
-	// Search for the given username
+	// Search for the given username in ldap
 	var searchResult *ldap.SearchResult
 	for _, searchBase := range a.Conf.SearchBaseDnList {
 		searchReq := ldap.SearchRequest{
@@ -93,13 +94,6 @@ func (a *LdapAuthenticator) Validate(user string, password string) bool {
 	}
 
 	userdn := searchResult.Entries[0].DN
-
-	// Bind as the user to verify their password
-	err = l.Bind(userdn, password)
-	if err != nil {
-		log.Printf("Invalid LDAP entry for %s.", user)
-		return false
-	}
 
 	// Case no allowed group is configured
 	if a.Conf.GroupDnList == nil {
