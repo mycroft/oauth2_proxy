@@ -106,11 +106,12 @@ func (p *CriteoProvider) GetProfile(ctx context.Context, s *sessions.SessionStat
 	}
 
 	var info tokenInfo
-	err := requests.New(p.ProfileURL.String()).
+	req := requests.New(p.ProfileURL.String()).
 		WithContext(ctx).
-		WithHeaders(getCriteoHeader(s.AccessToken)).
-		Do().
-		UnmarshalInto(&info)
+		WithHeaders(getCriteoHeader(s.AccessToken))
+
+	// Adding cookies if required before executing the request
+	err := EnrichRequestWithCookies(ctx, req).Do().UnmarshalInto(&info)
 	if err != nil {
 		return err
 	}

@@ -33,6 +33,28 @@ var (
 	_ Provider = (*ProviderData)(nil)
 )
 
+type key int
+
+const ContextCookies key = iota
+
+// EnrichRequestWithCookies add persistants cookies if required into the request
+func EnrichRequestWithCookies(ctx context.Context, reqBuilder requests.Builder) requests.Builder {
+	cookies := ctx.Value(ContextCookies)
+	if cookies == nil {
+		return reqBuilder
+	}
+
+	var cookiesHeader = string("")
+	for k, v := range cookies.(map[string]string) {
+		if cookiesHeader != "" {
+			cookiesHeader += "; "
+		}
+		cookiesHeader = fmt.Sprintf("%s%s=%s", cookiesHeader, k, v)
+	}
+
+	return reqBuilder.SetHeader("cookie", cookiesHeader)
+}
+
 // Redeem provides a default implementation of the OAuth2 token redemption process
 func (p *ProviderData) Redeem(ctx context.Context, redirectURL, code string) (*sessions.SessionState, error) {
 	if code == "" {
@@ -53,12 +75,13 @@ func (p *ProviderData) Redeem(ctx context.Context, redirectURL, code string) (*s
 		params.Add("resource", p.ProtectedResource.String())
 	}
 
-	result := requests.New(p.RedeemURL.String()).
+	req := requests.New(p.RedeemURL.String()).
 		WithContext(ctx).
 		WithMethod("POST").
 		WithBody(bytes.NewBufferString(params.Encode())).
-		SetHeader("Content-Type", "application/x-www-form-urlencoded").
-		Do()
+		SetHeader("Content-Type", "application/x-www-form-urlencoded")
+
+	result := EnrichRequestWithCookies(ctx, req).Do()
 	if result.Error() != nil {
 		return nil, result.Error()
 	}

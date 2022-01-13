@@ -17,6 +17,7 @@ type Cookie struct {
 	Secure   bool          `flag:"cookie-secure" cfg:"cookie_secure"`
 	HTTPOnly bool          `flag:"cookie-httponly" cfg:"cookie_httponly"`
 	SameSite string        `flag:"cookie-samesite" cfg:"cookie_samesite"`
+	Relay    []string      `flag:"cookie-relay" cfg:"cookie_relay"`
 }
 
 func cookieFlagSet() *pflag.FlagSet {
@@ -31,6 +32,7 @@ func cookieFlagSet() *pflag.FlagSet {
 	flagSet.Bool("cookie-secure", true, "set secure (HTTPS) cookie flag")
 	flagSet.Bool("cookie-httponly", true, "set HttpOnly cookie flag")
 	flagSet.String("cookie-samesite", "", "set SameSite cookie attribute (ie: \"lax\", \"strict\", \"none\", or \"\"). ")
+	flagSet.StringSlice("cookie-relay", []string{}, "Optional cookies to relay from front to back. Can be used for LB sticky sessions.")
 
 	return flagSet
 }
@@ -47,5 +49,6 @@ func cookieDefaults() Cookie {
 		Secure:   true,
 		HTTPOnly: true,
 		SameSite: "",
+		Relay:    nil,
 	}
 }

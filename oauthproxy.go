@@ -65,6 +65,7 @@ type OAuthProxy struct {
 	CookieExpire   time.Duration
 	CookieRefresh  time.Duration
 	CookieSameSite string
+	CookieRelay    []string
 	Validator      func(string) bool
 
 	RobotsPath        string
@@ -200,6 +201,7 @@ func NewOAuthProxy(opts *options.Options, validator func(string) bool) (*OAuthPr
 		CookieExpire:   opts.Cookie.Expire,
 		CookieRefresh:  opts.Cookie.Refresh,
 		CookieSameSite: opts.Cookie.SameSite,
+		CookieRelay:    opts.Cookie.Relay,
 		Validator:      validator,
 
 		RobotsPath:        "/robots.txt",
@@ -761,14 +763,17 @@ func (p *OAuthProxy) OAuthCallback(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	session, err := p.redeemCode(req)
+	// Enrich state to keep some cookies we want to send to backend.
+	ctx := p.extendRequestContextWithCookies(req)
+
+	session, err := p.redeemCode(ctx, req)
 	if err != nil {
 		logger.Errorf("Error redeeming code during OAuth2 callback: %v", err)
 		p.ErrorPage(rw, http.StatusInternalServerError, "Internal Server Error", "Internal Error")
 		return
 	}
 
-	err = p.enrichSessionState(req.Context(), session)
+	err = p.enrichSessionState(ctx, session)
 	if err != nil {
 		logger.Errorf("Error creating session during OAuth2 callback: %v", err)
 		p.ErrorPage(rw, http.StatusInternalServerError, "Internal Server Error", "Internal Error")
@@ -820,14 +825,32 @@ func (p *OAuthProxy) OAuthCallback(rw http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (p *OAuthProxy) redeemCode(req *http.Request) (*sessionsapi.SessionState, error) {
+func (p *OAuthProxy) extendRequestContextWithCookies(req *http.Request) context.Context {
+	var ctx = req.Context()
+	var lbCookieNames = make(map[string]bool)
+	var cookies = make(map[string]string)
+
+	for _, cookie := range p.CookieRelay {
+		lbCookieNames[cookie] = true
+	}
+
+	for _, cookie := range req.Cookies() {
+		if lbCookieNames[cookie.Name] {
+			cookies[cookie.Name] = cookie.Value
+		}
+	}
+
+	return context.WithValue(ctx, providers.ContextCookies, cookies)
+}
+
+func (p *OAuthProxy) redeemCode(ctx context.Context, req *http.Request) (*sessionsapi.SessionState, error) {
 	code := req.Form.Get("code")
 	if code == "" {
 		return nil, providers.ErrMissingCode
 	}
 
 	redirectURI := p.getOAuthRedirectURI(req)
-	s, err := p.provider.Redeem(req.Context(), redirectURI, code)
+	s, err := p.provider.Redeem(ctx, redirectURI, code)
 	if err != nil {
 		return nil, err
 	}
